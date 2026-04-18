@@ -20,7 +20,7 @@ class XOAClient:
     ) -> None:
         proto = "https" if use_ssl else "http"
         self._base_url = f"{proto}://{api_host}/rest/v0"
-        print(self._base_url)
+
         self._username = username
         self._password = password
         self._token = token
@@ -41,18 +41,16 @@ class XOAClient:
         else:
             raise Exception(AUTHENTICATION_MISSING_MSG)
 
-        print(self.get("ping"))
-
-    def _request(self, method: str, endpoint: str):
+    def _request(self, method: str, endpoint: str, params=None):
         """Internal helper to handle all requests."""
 
         url = f"{self._base_url}/{endpoint.lstrip('/')}"
-        print(url)
 
         try:
             res = self.session.request(
                 method=method,
                 url=url,
+                params=params,
                 timeout=self._timeout,
                 verify=self._validate_certs,
             )
@@ -62,5 +60,14 @@ class XOAClient:
             print(f"Request failed: {e}")
             raise
 
-    def get(self, endpoint: str):
-        return self._request(method="GET", endpoint=endpoint)
+    def delete(self, endpoint: str, params):
+        return self._request(method="DELETE", endpoint=endpoint, params=params)
+
+    def get(self, endpoint: str, params=None):
+        return self._request(method="GET", endpoint=endpoint, params=params)
+
+    def post(self, endpoint: str, params):
+        return self._request(method="POST", endpoint=endpoint, params=params)
+
+    def put(self, endpoint: str, params):
+        return self._request(method="PUT", endpoint=endpoint, params=params)
