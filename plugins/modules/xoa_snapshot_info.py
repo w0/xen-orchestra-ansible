@@ -24,6 +24,15 @@ def _filter_by_vm_uuid(response, vm_uuid):
     return filtered
 
 
+def _filter_by_name_label(respone, snapshot_name):
+    filtered = []
+    for snapshot in respone:
+        if snapshot_name == snapshot["name_label"]:
+            filtered.append(snapshot)
+
+    return filtered
+
+
 def main():
 
     module = AnsibleModule(
@@ -50,6 +59,15 @@ def main():
     if module.params["snapshot_uuid"]:
         path = module.params["snapshot_uuid"]
         params = None
+    elif module.params["snapshot_name"]:
+        path = None
+        fields = module.params["fields"]
+        fields.append("name_label")
+
+        params = dict(
+            fields=",".join(fields),
+            limit=module.params["limit"],
+        )
     else:
         path = None
         params = dict(
@@ -64,8 +82,11 @@ def main():
             msg="Failed to get snapshot info", result=response, status_code=status_code
         )
 
-    if module.params["vm_uuid"]:
-        response = _filter_by_vm_uuid(response, module.params["vm_uuid"])
+    if vm_uuid := module.params["vm_uuid"]:
+        response = _filter_by_vm_uuid(response, vm_uuid)
+
+    if snapshot_name := module.params["snapshot_name"]:
+        response = _filter_by_name_label(response, snapshot_name)
 
     module.exit_json(changed=False, snapshots=response)
 
