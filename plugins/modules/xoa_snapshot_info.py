@@ -51,7 +51,9 @@ def main():
     response, status_code = client.get("vm-snapshots", path, params)
 
     if status_code != 200:
-        module.fail_json(msg="Failed to get snapshot info", status_code=status_code)
+        module.fail_json(
+            msg="Failed to get snapshot info", result=response, status_code=status_code
+        )
 
     module.exit_json(changed=False, snapshots=response)
 
