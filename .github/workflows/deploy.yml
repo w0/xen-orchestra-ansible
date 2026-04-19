@@ -14,8 +14,11 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Get the version name from the tags
-        run: echo "RELEASE_VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
-      
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"  # remove 'refs/tags/' prefix
+          VERSION="${VERSION#v}"              # remove leading 'v' if it exists
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Injecting a dynamic Collection version
         uses: artis3n/ansible_galaxy_collection@v3
         with:
