@@ -2,3 +2,6 @@
 __pycache__
 test.py
 .zed
+*.yaml
+*.yml
+*.tar.gz
