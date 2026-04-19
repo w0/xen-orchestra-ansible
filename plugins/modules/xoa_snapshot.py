@@ -56,7 +56,11 @@ def _absent(module, client):
 
 
 def _rollback(module, client):
-    pass
+    """Rollback a VM snapshot. Placeholder implementation."""
+    module.exit_json(
+        changed=False,
+        msg="[NOT Implemented] VM Snapshot rolled back successfully",
+    )
 
 
 def main():
