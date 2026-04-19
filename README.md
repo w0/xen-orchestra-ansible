@@ -4,7 +4,7 @@ An Ansible collection for managing resources in Xen Orchestra through its REST A
 
 ## Status
 
-This project is under active development. The collection is not yet published to Ansible Galaxy.
+This collection is published on [Ansible Galaxy](https://galaxy.ansible.com/).
 
 ## Requirements
 
@@ -12,20 +12,15 @@ This project is under active development. The collection is not yet published to
 - `uv` for local development
 - Ansible for using and building the collection
 
-## Development
-
-To set up a development environment:
-
-1. Clone the repository.
-2. Install dependencies:
-
-   ```shell
-   uv sync
-   ```
-
-3. Run your checks or tests as needed.
-
 ## Installation
+
+### Ansible Galaxy
+
+Install the collection directly from Ansible Galaxy:
+
+```shell
+ansible-galaxy collection install w0.xen_orchestra
+```
 
 ### From source
 
@@ -47,10 +42,6 @@ To set up a development environment:
    ansible-galaxy collection install ./w0-xen_orchestra-<build_version>.tar.gz
    ```
 
-### Ansible Galaxy
-
-This collection is not yet available on Ansible Galaxy.
-
 ## Usage
 
 Once installed, reference the collection by its fully qualified collection name in your playbooks.
@@ -60,11 +51,31 @@ Example:
 ```yaml
 - hosts: localhost
   gather_facts: false
+  
+  module_defaults:
+    group/w0.xen_orchestra.xen_orchestra:
+      api_host: example.domain.com
+      token: very_secure_token
+      
   tasks:
-    - name: Use a Xen Orchestra module
-      w0.xen_orchestra.your_module_here:
-        # module options here
+    - name: Create VM Snapshot
+      w0.xen_orchestra.xoa_snapshot:
+        vm_uuid: "858617ef-fbda-c671-a65e-5aa3d6ad4de0"
+        snapshot_name: "pre-update"
 ```
+
+## Development
+
+To set up a development environment:
+
+1. Clone the repository.
+2. Install dependencies:
+
+   ```shell
+   uv sync
+   ```
+
+3. Run your checks or tests as needed.
 
 ## Contributing
 
