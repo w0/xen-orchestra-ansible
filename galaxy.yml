@@ -11,7 +11,8 @@ license:
 tags:
   - xen
   - xen_orchestra
-  - xcp-ng
+  - xcp_ng
+  - xpcng
   - virtualization
 repository: https://github.com/w0/xen-orchestra-ansible
 documentation: https://github.com/w0/xen-orchestra-ansible
