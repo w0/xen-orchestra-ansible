@@ -1,0 +1,32 @@
+namespace: w0
+name: xen_orchestra
+version: 0.1.0
+authors:
+  - w0 (https://github.com/w0)
+readme: README.md
+description: >-
+  Ansible collection for managning resources in Xen Orchestra using the rest-api.
+license:
+  - GPL-3.0-or-later
+tags:
+  - xen
+  - xen_orchestra
+  - xcp-ng
+  - virtualization
+repository: https://github.com/w0/xen-orchestra-ansible
+documentation: https://github.com/w0/xen-orchestra-ansible
+homepage: https://github.com/w0/xen-orchestra-ansible
+issues: https://github.com/w0/xen-orchestra-ansible/issues
+
+build_ignore:
+  - .git
+  - .gitignore
+  - .venv
+  - venv
+  - __pycache__
+  - "*.pyc"
+  - "*.retry"
+  - tests/
+  - collections/
+  - "*.tar.gz"
+  - .zed

@@ -5,3 +5,5 @@ test.py
 *.yaml
 *.yml
 *.tar.gz
+
+!galaxy.yml
