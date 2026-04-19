@@ -15,6 +15,15 @@ def _client(module):
     )
 
 
+def _filter_by_vm_uuid(response, vm_uuid):
+    filtered = []
+    for snapshot in response:
+        if vm_uuid in snapshot["$snapshot_of"]:
+            filtered.append(snapshot)
+
+    return filtered
+
+
 def main():
 
     module = AnsibleModule(
@@ -54,6 +63,9 @@ def main():
         module.fail_json(
             msg="Failed to get snapshot info", result=response, status_code=status_code
         )
+
+    if module.params["vm_uuid"]:
+        response = _filter_by_vm_uuid(response, module.params["vm_uuid"])
 
     module.exit_json(changed=False, snapshots=response)
 
