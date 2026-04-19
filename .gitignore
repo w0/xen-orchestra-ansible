@@ -7,3 +7,4 @@ test.py
 *.tar.gz
 
 !galaxy.yml
+!runtime.yml
