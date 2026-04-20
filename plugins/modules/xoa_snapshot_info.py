@@ -1,3 +1,157 @@
+#!/usr/bin/python
+
+DOCUMENTATION = r"""
+---
+module: xoa_snapshot_info
+short_description: Get information about Xen Orchestra VM snapshots
+description:
+  - Retrieve snapshot information from Xen Orchestra.
+  - Query snapshots by snapshot UUID, snapshot name, VM UUID, or additional filter and field combinations.
+  - When filtering by snapshot name or VM UUID, the module automatically adds the minimum fields needed for filtering and returned data.
+version_added: "1.0.0"
+options:
+  api_host:
+    description:
+      - Xen Orchestra API host.
+    required: true
+    type: str
+  username:
+    description:
+      - Username used for authentication.
+      - Use with C(password) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+  password:
+    description:
+      - Password used for authentication.
+      - Use with C(username) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+    no_log: true
+  token:
+    description:
+      - API token used for authentication.
+      - Use by itself when authenticating with a token.
+      - Must not be used with C(username) or C(password).
+    type: str
+    no_log: true
+  use_ssl:
+    description:
+      - Whether to connect to Xen Orchestra over HTTPS.
+    type: bool
+    default: true
+  validate_certs:
+    description:
+      - Whether to validate TLS certificates.
+    type: bool
+    default: true
+  vm_uuid:
+    description:
+      - Filter snapshots belonging to the VM with this UUID.
+      - Ignored when C(snapshot_uuid) is set.
+    type: str
+  snapshot_name:
+    description:
+      - Filter snapshots by exact snapshot name.
+      - Matching is exact and case-sensitive.
+      - Ignored when C(snapshot_uuid) is set.
+    type: str
+  snapshot_uuid:
+    description:
+      - Fetch a single snapshot by UUID.
+      - When set, C(snapshot_name), C(vm_uuid), C(filter), C(limit), and C(fields) are ignored.
+    type: str
+  fields:
+    description:
+      - Fields to request from Xen Orchestra.
+      - Defaults to C(uuid), C(snapshot_time), and C($snapshot_of).
+      - C(name_label) is automatically added when C(snapshot_name) is set.
+      - C($snapshot_of) is automatically added when C(vm_uuid) is set.
+      - Ignored when C(snapshot_uuid) is set.
+    type: list
+    elements: str
+    default:
+      - uuid
+      - snapshot_time
+      - $snapshot_of
+  filter:
+    description:
+      - Additional Xen Orchestra filter expressions.
+      - Expressions are joined with spaces and sent directly to Xen Orchestra.
+      - Ignored when C(snapshot_uuid) is set.
+    type: list
+    elements: str
+  limit:
+    description:
+      - Maximum number of snapshots to return.
+      - Ignored when C(snapshot_uuid) is set.
+    type: int
+author:
+  - w0
+notes:
+  - The module always calls Xen Orchestra's C(vm-snapshots) endpoint.
+  - If C(snapshot_uuid) is provided, the module performs a direct lookup using that UUID as the path segment.
+  - If C(snapshot_uuid) is provided, the module warns when other query options are also set.
+  - C(snapshot_name) is converted to an exact regular expression filter using C(re.escape()).
+  - C(vm_uuid) is converted into a filter of the form C($snapshot_of:"<uuid>").
+  - The module always returns the response under C(snapshots); a single object response is normalized into a one-element list.
+"""
+
+EXAMPLES = r"""
+- name: Get all snapshots using the default fields
+  w0.xen_orchestra.xoa_snapshot_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+
+- name: Get a snapshot by UUID
+  w0.xen_orchestra.xoa_snapshot_info:
+    api_host: xo.example.com
+    token: "{{ xo_token }}"
+    snapshot_uuid: 0d1c2b3a-4567-89ab-cdef-0123456789ab
+
+- name: Get snapshots for a VM
+  w0.xen_orchestra.xoa_snapshot_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    vm_uuid: 7b1f3d20-1234-4567-89ab-0123456789ab
+
+- name: Get snapshots by exact name
+  w0.xen_orchestra.xoa_snapshot_info:
+    api_host: xo.example.com
+    token: "{{ xo_token }}"
+    snapshot_name: daily-backup
+
+- name: Get snapshots with additional filters and custom fields
+  w0.xen_orchestra.xoa_snapshot_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    vm_uuid: 7b1f3d20-1234-4567-89ab-0123456789ab
+    filter:
+      - snapshot_time:>="2024-01-01T00:00:00Z"
+    fields:
+      - uuid
+      - snapshot_time
+      - name_label
+"""
+
+RETURN = r"""
+snapshots:
+  description:
+    - List of snapshot records returned by Xen Orchestra.
+    - When C(snapshot_uuid) is used, a single object response is normalized into a one-item list.
+  returned: always
+  type: list
+  elements: dict
+  sample:
+    - uuid: 0d1c2b3a-4567-89ab-cdef-0123456789ab
+      snapshot_time: "2024-01-01T12:34:56Z"
+      $snapshot_of: 7b1f3d20-1234-4567-89ab-0123456789ab
+"""
+
+
 import re
 
 from ansible.module_utils.basic import AnsibleModule
@@ -37,12 +191,16 @@ def main():
             limit=dict(type="int"),
         ),
         mutually_exclusive=[["snapshot_name", "snapshot_uuid"]],
-        required_one_of=[["username", "token"]],
-        required_together=[["username", "password"]],
         supports_check_mode=True,
     )
 
-    client = _client(module)
+    if module.params["token"]:
+        if module.params["username"] or module.params["password"]:
+            module.fail_json(msg="Token cannot be used with username or password")
+    elif module.params["username"] and module.params["password"]:
+        pass
+    else:
+        module.fail_json(msg="Either token or username/password must be provided")
 
     if module.params["snapshot_uuid"]:
         ignored = {
@@ -83,6 +241,8 @@ def main():
             filter=" ".join(filters),
             limit=module.params["limit"],
         )
+
+    client = _client(module)
 
     response, status_code = client.get("vm-snapshots", path, params)
 
