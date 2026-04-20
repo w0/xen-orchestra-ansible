@@ -15,24 +15,6 @@ def _client(module):
     )
 
 
-def _filter_by_vm_uuid(response, vm_uuid):
-    filtered = []
-    for snapshot in response:
-        if snapshot.get("$snapshot_of") == vm_uuid:
-            filtered.append(snapshot)
-
-    return filtered
-
-
-def _filter_by_name_label(response, snapshot_name):
-    filtered = []
-    for snapshot in response:
-        if snapshot.get("name_label") == snapshot_name:
-            filtered.append(snapshot)
-
-    return filtered
-
-
 def main():
 
     module = AnsibleModule(
@@ -47,9 +29,10 @@ def main():
             snapshot_name=dict(type="str"),
             snapshot_uuid=dict(type="str"),
             fields=dict(type="list", default=["uuid", "snapshot_time", "$snapshot_of"]),
+            filter=dict(type="list"),
             limit=dict(type="int"),
         ),
-        mutually_exclusive=["snapshot_name", "snapshot_uuid"],
+        mutually_exclusive=["snapshot_name", "snapshot_uuid", "vm_uuid"],
         required_one_of=[["username", "token"]],
         required_together=[["username", "password"]],
         supports_check_mode=True,
@@ -70,8 +53,25 @@ def main():
         if "name_label" not in fields:
             fields.append("name_label")
 
+        filter = f'name_label:"{module.params["snapshot_name"]}"'
+
         params = dict(
             fields=",".join(fields),
+            filter=filter,
+            limit=module.params["limit"],
+        )
+    elif module.params["vm_uuid"]:
+        path = None
+
+        fields = list(module.params["fields"])
+        if "$snapshot_of" not in fields:
+            fields.append("$snapshot_of")
+
+        filter = f'$snapshot_of:"{module.params["vm_uuid"]}"'
+
+        params = dict(
+            fields=",".join(module.params["fields"]),
+            filter=filter,
             limit=module.params["limit"],
         )
     else:
@@ -87,15 +87,6 @@ def main():
         module.fail_json(
             msg="Failed to get snapshot info", result=response, status_code=status_code
         )
-
-    if module.params["snapshot_uuid"]:
-        module.exit_json(changed=False, snapshots=[response])
-
-    if vm_uuid := module.params["vm_uuid"]:
-        response = _filter_by_vm_uuid(response, vm_uuid)
-
-    if snapshot_name := module.params["snapshot_name"]:
-        response = _filter_by_name_label(response, snapshot_name)
 
     module.exit_json(changed=False, snapshots=response)
 
