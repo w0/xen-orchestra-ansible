@@ -5,6 +5,8 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_client import
     XOAClient,
 )
 
+SNAPSHOT_DEFAULT_FIELDS = ["uuid", "snapshot_time", "$snapshot_of"]
+
 
 def _client(module):
     return XOAClient(
@@ -30,7 +32,7 @@ def main():
             vm_uuid=dict(type="str"),
             snapshot_name=dict(type="str"),
             snapshot_uuid=dict(type="str"),
-            fields=dict(type="list", default=["uuid", "snapshot_time", "$snapshot_of"]),
+            fields=dict(type="list", default=SNAPSHOT_DEFAULT_FIELDS),
             filter=dict(type="list"),
             limit=dict(type="int"),
         ),
@@ -43,18 +45,21 @@ def main():
     client = _client(module)
 
     if module.params["snapshot_uuid"]:
-        ignored = ["snapshot_name", "vm_uuid", "filter", "fields", "limit"]
+        ignored = {
+            "snapshot_name": module.params.get("snapshot_name"),
+            "vm_uuid": module.params.get("vm_uuid"),
+            "filter": module.params.get("filter"),
+            "limit": module.params.get("limit"),
+            "fields": module.params.get("fields"),
+        }
 
-        for p in ignored:
-            if module.params.get(p):
-                module.warn(f"{p} is ignored when snapshot_uuid is set")
+        for name, value in ignored.items():
+            if value not in (None, [], "", SNAPSHOT_DEFAULT_FIELDS):
+                module.warn(f"{name} is ignored when snapshot_uuid is provided")
 
         path = module.params["snapshot_uuid"]
         params = None
-        if module.params["fields"] != ["uuid", "snapshot_time", "$snapshot_of"]:
-            module.warn("fields parameter is ignored when snapshot_uuid is provided")
-        if module.params["limit"]:
-            module.warn("limit parameter is ignored when snapshot_uuid is provided")
+
     else:
         path = None
 
