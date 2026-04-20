@@ -18,7 +18,7 @@ def _client(module):
 def _present(module, client):
     path = f"{module.params['vm_uuid']}/actions/snapshot"
     body = dict(name_label=module.params["snapshot_name"])
-    params = dict(sync=str(module.params["sync"]).lower())
+    params = dict(sync=module.params["sync"])
 
     response, status_code = client.post(
         "vms",
@@ -57,10 +57,8 @@ def _absent(module, client):
 
 def _rollback(module, client):
     """Rollback a VM snapshot. Placeholder implementation."""
-    module.exit_json(
-        changed=False,
-        msg="[NOT Implemented] VM Snapshot rolled back successfully",
-    )
+    module.warn("rollback is not implemented")
+    module.exit_json(changed=False)
 
 
 def main():
@@ -81,12 +79,13 @@ def main():
             sync=dict(type="bool", default=False),
         ),
         required_if=[
+            ("state", "present", ["vm_uuid"]),
             ("state", "absent", ["snapshot_uuid"]),
             ("state", "rollback", ["snapshot_uuid"]),
         ],
         required_one_of=[["username", "token"]],
         required_together=[["username", "password"]],
-        supports_check_mode=False,
+        supports_check_mode=True,
     )
 
     state = module.params["state"]
