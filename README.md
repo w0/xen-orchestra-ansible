@@ -4,7 +4,7 @@ An Ansible collection for managing resources in Xen Orchestra through its REST A
 
 ## Status
 
-This collection is published on [Ansible Galaxy](https://galaxy.ansible.com/).
+This collection is published on [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/w0/xen_orchestra/).
 
 ## Requirements
 
