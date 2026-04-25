@@ -31,3 +31,6 @@ build_ignore:
   - collections/
   - "*.tar.gz"
   - .zed
+  - .github
+  - pyproject.toml
+  - uv.lock

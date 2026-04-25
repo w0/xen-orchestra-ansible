@@ -155,52 +155,33 @@ snapshots:
 import re
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_client import (  # type: ignore
-    XOAClient,
+from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # type: ignore
+    build_xoa_argument_spec,
+    new_xoa_client,
+    validate_auth,
 )
 
 SNAPSHOT_DEFAULT_FIELDS = ["uuid", "snapshot_time", "$snapshot_of"]
 
 
-def _client(module):
-    return XOAClient(
-        api_host=module.params["api_host"],
-        username=module.params["username"],
-        password=module.params["password"],
-        token=module.params["token"],
-        use_ssl=module.params["use_ssl"],
-        validate_certs=module.params["validate_certs"],
-    )
-
-
 def main():
 
     module = AnsibleModule(
-        argument_spec=dict(
-            api_host=dict(type="str", required=True),
-            username=dict(type="str"),
-            password=dict(type="str", no_log=True),
-            token=dict(type="str", no_log=True),
-            use_ssl=dict(type="bool", default=True),
-            validate_certs=dict(type="bool", default=True),
-            vm_uuid=dict(type="str"),
-            snapshot_name=dict(type="str"),
-            snapshot_uuid=dict(type="str"),
-            fields=dict(type="list", default=SNAPSHOT_DEFAULT_FIELDS),
-            filter=dict(type="list"),
-            limit=dict(type="int"),
+        argument_spec=build_xoa_argument_spec(
+            dict(
+                vm_uuid=dict(type="str"),
+                snapshot_name=dict(type="str"),
+                snapshot_uuid=dict(type="str"),
+                fields=dict(type="list", default=SNAPSHOT_DEFAULT_FIELDS),
+                filter=dict(type="list"),
+                limit=dict(type="int"),
+            )
         ),
         mutually_exclusive=[["snapshot_name", "snapshot_uuid"]],
         supports_check_mode=True,
     )
 
-    if module.params["token"]:
-        if module.params["username"] or module.params["password"]:
-            module.fail_json(msg="Token cannot be used with username or password")
-    elif module.params["username"] and module.params["password"]:
-        pass
-    else:
-        module.fail_json(msg="Either token or username/password must be provided")
+    validate_auth(module)
 
     if module.params["snapshot_uuid"]:
         ignored = {
@@ -242,9 +223,11 @@ def main():
             limit=module.params["limit"],
         )
 
-    client = _client(module)
-
-    response, status_code = client.get("vm-snapshots", path, params)
+    try:
+        client = new_xoa_client(module)
+        response, status_code = client.get("vm-snapshots", path, params)
+    except Exception as e:
+        module.fail_json(msg=str(e))
 
     if status_code != 200:
         module.fail_json(

@@ -136,20 +136,11 @@ result:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_client import (  # type: ignore
-    XOAClient,
+from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # type: ignore
+    build_xoa_argument_spec,
+    new_xoa_client,
+    validate_auth,
 )
-
-
-def _client(module):
-    return XOAClient(
-        api_host=module.params["api_host"],
-        username=module.params["username"],
-        password=module.params["password"],
-        token=module.params["token"],
-        use_ssl=module.params["use_ssl"],
-        validate_certs=module.params["validate_certs"],
-    )
 
 
 def _present(module, client):
@@ -200,20 +191,18 @@ def _rollback(module, client):
 
 def main():
     module = AnsibleModule(
-        argument_spec=dict(
-            api_host=dict(type="str", required=True),
-            username=dict(type="str"),
-            password=dict(type="str", no_log=True),
-            token=dict(type="str", no_log=True),
-            use_ssl=dict(type="bool", default=True),
-            validate_certs=dict(type="bool", default=True),
-            vm_uuid=dict(type="str"),
-            state=dict(
-                type="str", choices=["present", "absent", "rollback"], default="present"
-            ),
-            snapshot_name=dict(type="str"),
-            snapshot_uuid=dict(type="str"),
-            sync=dict(type="bool", default=False),
+        argument_spec=build_xoa_argument_spec(
+            dict(
+                vm_uuid=dict(type="str"),
+                state=dict(
+                    type="str",
+                    choices=["present", "absent", "rollback"],
+                    default="present",
+                ),
+                snapshot_name=dict(type="str"),
+                snapshot_uuid=dict(type="str"),
+                sync=dict(type="bool", default=False),
+            )
         ),
         required_if=[
             ("state", "present", ["vm_uuid"]),
@@ -223,13 +212,7 @@ def main():
         supports_check_mode=True,
     )
 
-    if module.params["token"]:
-        if module.params["username"] or module.params["password"]:
-            module.fail_json(msg="Token cannot be used with username or password")
-    elif module.params["username"] and module.params["password"]:
-        pass
-    else:
-        module.fail_json(msg="Either token or username/password must be provided")
+    validate_auth(module)
 
     state = module.params["state"]
 
@@ -240,7 +223,7 @@ def main():
     }
 
     try:
-        client = _client(module)
+        client = new_xoa_client(module)
         state_handler[state](module, client)
 
     except Exception as e:
