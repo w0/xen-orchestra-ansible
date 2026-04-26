@@ -3,9 +3,9 @@
 DOCUMENTATION = r"""
 ---
 module: xoa_snapshot_info
-short_description: Get information about Xen Orchestra VM snapshots
+short_description: Gather information about Xen Orchestra VM snapshots
 description:
-  - Retrieve snapshot information from Xen Orchestra.
+  - Gather information about VM snapshots through the Xen Orchestra REST API.
   - Query snapshots by snapshot UUID, snapshot name, VM UUID, or additional filter and field combinations.
   - When filtering by snapshot name or VM UUID, the module automatically adds the minimum fields needed for filtering and returned data.
 version_added: "1.0.0"
@@ -17,20 +17,20 @@ options:
     type: str
   username:
     description:
-      - Username used for authentication.
+      - Username for Xen Orchestra authentication.
       - Use with C(password) when authenticating with username and password.
       - Must not be used with C(token).
     type: str
   password:
     description:
-      - Password used for authentication.
+      - Password for Xen Orchestra authentication.
       - Use with C(username) when authenticating with username and password.
       - Must not be used with C(token).
     type: str
     no_log: true
   token:
     description:
-      - API token used for authentication.
+      - API token for Xen Orchestra authentication.
       - Use by itself when authenticating with a token.
       - Must not be used with C(username) or C(password).
     type: str
@@ -47,7 +47,7 @@ options:
     default: true
   vm_uuid:
     description:
-      - Filter snapshots belonging to the VM with this UUID.
+      - Filter snapshots belonging to the VM identified by this UUID.
       - Ignored when C(snapshot_uuid) is set.
     type: str
   snapshot_name:
@@ -63,7 +63,7 @@ options:
     type: str
   fields:
     description:
-      - Fields to request from Xen Orchestra.
+      - List of fields to request from Xen Orchestra.
       - Defaults to C(uuid), C(snapshot_time), and C($snapshot_of).
       - C(name_label) is automatically added when C(snapshot_name) is set.
       - C($snapshot_of) is automatically added when C(vm_uuid) is set.
@@ -89,6 +89,8 @@ options:
 author:
   - w0
 notes:
+  - Authentication must be either C(token) alone or C(username) and C(password) together.
+  - This module maps to the Xen Orchestra C(/vm-snapshots) and C(/vm-snapshots/{id}) endpoints.
   - The module always calls Xen Orchestra's C(vm-snapshots) endpoint.
   - If C(snapshot_uuid) is provided, the module performs a direct lookup using that UUID as the path segment.
   - If C(snapshot_uuid) is provided, the module warns when other query options are also set.
@@ -135,6 +137,13 @@ EXAMPLES = r"""
       - uuid
       - snapshot_time
       - name_label
+
+- name: Get the most recent snapshots for a VM
+  w0.xen_orchestra.xoa_snapshot_info:
+    api_host: xo.example.com
+    token: "{{ xo_token }}"
+    vm_uuid: 7b1f3d20-1234-4567-89ab-0123456789ab
+    limit: 5
 """
 
 RETURN = r"""

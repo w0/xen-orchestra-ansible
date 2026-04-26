@@ -5,8 +5,10 @@ DOCUMENTATION = r"""
 module: xoa_snapshot
 short_description: Manage Xen Orchestra VM snapshots
 description:
-  - Create and delete Xen Orchestra VM snapshots.
-  - Rollback is accepted as a state, but it is not implemented.
+  - Create and delete VM snapshots through the Xen Orchestra REST API.
+  - Use O(state=present) to create a snapshot for a VM.
+  - Use O(state=absent) to delete an existing snapshot by UUID.
+  - O(state=rollback) is accepted for interface compatibility, but rollback is not implemented by this module.
 version_added: "1.0.0"
 options:
   api_host:
@@ -51,10 +53,10 @@ options:
     type: str
   state:
     description:
-      - Desired state of the snapshot.
-      - C(present) creates a snapshot.
-      - C(absent) deletes a snapshot.
-      - C(rollback) is accepted but not implemented.
+      - Desired state of the VM snapshot.
+      - C(present) creates a snapshot for the VM identified by O(vm_uuid).
+      - C(absent) deletes the snapshot identified by O(snapshot_uuid).
+      - C(rollback) is accepted for interface compatibility, but it is not implemented.
     type: str
     choices:
       - present
@@ -63,26 +65,29 @@ options:
     default: present
   snapshot_name:
     description:
-      - Optional name to assign to the created snapshot.
-      - If omitted, Xen Orchestra uses the VM name.
-      - Used when C(state=present).
+      - Optional name to assign to the snapshot being created.
+      - If omitted, Xen Orchestra uses its default snapshot naming behavior.
+      - Only used when C(state=present).
     type: str
   snapshot_uuid:
     description:
-      - UUID of the snapshot to delete.
+      - UUID of the snapshot to act on.
       - Required when C(state=absent) or C(state=rollback).
+      - Ignored when C(state=present).
     type: str
   sync:
     description:
-      - Whether snapshot creation should be synchronous.
+      - Whether the snapshot creation request should be performed synchronously.
+      - Only used when C(state=present).
     type: bool
     default: false
 author:
-  - Your Name Here
+  - w0
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
+  - This module maps to the Xen Orchestra C(/vms/{id}/actions/snapshot) and C(/vm-snapshots/{id}) endpoints.
   - C(rollback) is accepted as a state but only emits a warning and returns C(changed=false).
-  - The module supports check mode, but it does not currently change behavior when check mode is enabled.
+  - This module supports check mode, but check mode does not currently change behavior.
 """
 
 EXAMPLES = r"""
@@ -96,7 +101,14 @@ EXAMPLES = r"""
     state: present
     sync: false
 
-- name: Delete a snapshot
+- name: Create a VM snapshot using token authentication
+  w0.xen_orchestra.xoa_snapshot:
+    api_host: xo.example.com
+    token: "{{ xo_api_token }}"
+    vm_uuid: 00000000-0000-0000-0000-000000000000
+    state: present
+
+- name: Delete a snapshot by UUID
   w0.xen_orchestra.xoa_snapshot:
     api_host: xo.example.com
     token: "{{ xo_api_token }}"
@@ -115,13 +127,15 @@ EXAMPLES = r"""
 RETURN = r"""
 changed:
   description:
-    - Whether any change was made.
+    - Whether the module reports a change.
+    - Snapshot creation and deletion report C(true) on success.
+    - Rollback always reports C(false) because it is not implemented.
   returned: always
   type: bool
 msg:
   description:
     - Human-readable result message.
-  returned: when available
+  returned: always
   type: str
 status_code:
   description:
@@ -130,7 +144,8 @@ status_code:
   type: int
 result:
   description:
-    - Raw response payload from the Xen Orchestra API.
+    - Raw response payload returned by the Xen Orchestra API.
+    - Present when Xen Orchestra returns a response body for the operation.
   returned: when available
   type: raw
 """
@@ -178,9 +193,7 @@ def _absent(module, client):
             msg="VM Snapshot deletion failed", result=response, status_code=status_code
         )
 
-    module.exit_json(
-        changed=True, msg="VM Snapshot deleted successfully", status_code=status_code
-    )
+    module.exit_json(changed=True, msg="VM Snapshot deleted successfully", status_code=status_code)
 
 
 def _rollback(module, client):
