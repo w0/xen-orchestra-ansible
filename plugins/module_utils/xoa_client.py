@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import requests
 
 AUTHENTICATION_MISSING_MSG = (
@@ -51,7 +53,9 @@ class XOAClient:
             url = f"{url}/{str(path).lstrip('/')}"
         return url
 
-    def request(self, method: str, endpoint: str, path=None, params=None, body=None):
+    def request(
+        self, method: str, endpoint: str, path=None, params=None, body=None
+    ) -> Tuple[dict | None, int]:
         """Handle all HTTP requests."""
 
         url = self._build_url(endpoint, path)
@@ -88,22 +92,30 @@ class XOAClient:
 
         return payload, response.status_code
 
-    def delete(self, endpoint: str, path=None, params=None, body=None):
+    def delete(
+        self, endpoint: str, path=None, params=None, body=None
+    ) -> Tuple[dict | None, int]:
         return self.request(
             method="DELETE", endpoint=endpoint, path=path, params=params, body=body
         )
 
-    def get(self, endpoint: str, path=None, params=None, body=None):
+    def get(
+        self, endpoint: str, path=None, params=None, body=None
+    ) -> Tuple[dict | None, int]:
         return self.request(
             method="GET", endpoint=endpoint, path=path, params=params, body=body
         )
 
-    def post(self, endpoint: str, path=None, params=None, body=None):
+    def post(
+        self, endpoint: str, path=None, params=None, body=None
+    ) -> Tuple[dict | None, int]:
         return self.request(
             method="POST", endpoint=endpoint, path=path, params=params, body=body
         )
 
-    def put(self, endpoint: str, path=None, params=None, body=None):
+    def put(
+        self, endpoint: str, path=None, params=None, body=None
+    ) -> Tuple[dict | None, int]:
         return self.request(
             method="PUT", endpoint=endpoint, path=path, params=params, body=body
         )
