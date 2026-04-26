@@ -4,3 +4,4 @@ action_groups:
   xen_orchestra:
     - xoa_snapshot
     - xoa_snapshot_info
+    - xoa_vm_info
