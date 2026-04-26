@@ -5,8 +5,12 @@ AUTHENTICATION_MISSING_MSG = (
 )
 
 
+class XOAClientError(Exception):
+    pass
+
+
 class XOAClient:
-    CALL_TIMEOUT = 10
+    DEFAULT_TIMEOUT = 10
 
     def __init__(
         self,
@@ -14,7 +18,7 @@ class XOAClient:
         username=None,
         password=None,
         token=None,
-        timeout: int = 10,
+        timeout: int = DEFAULT_TIMEOUT,
         validate_certs=True,
         use_ssl=True,
     ) -> None:
@@ -24,73 +28,82 @@ class XOAClient:
         self._username = username
         self._password = password
         self._token = token
-        self._timeout = timeout
+        self._timeout = self.DEFAULT_TIMEOUT if timeout is None else timeout
         self._validate_certs = validate_certs
-        self._use_ssl = use_ssl
 
         self.session = requests.Session()
-        self.__set_auth()
+        self._configure_auth()
+        self.request("GET", "ping")
 
-    def __set_auth(self) -> None:
-        """Sets authorization header or auth based on input."""
+    def _configure_auth(self) -> None:
+        """Configure authentication on the session."""
 
         if self._token:
             self.session.cookies.update({"authenticationToken": self._token})
         elif self._username and self._password:
-            self.session.auth = (f"{self._username}", f"{self._password}")
+            self.session.auth = (self._username, self._password)
         else:
-            raise Exception(AUTHENTICATION_MISSING_MSG)
+            raise XOAClientError(AUTHENTICATION_MISSING_MSG)
 
-        self.get("ping")
-
-    def _request(self, method: str, endpoint: str, path=None, params=None, body=None):
-        """Internal helper to handle all requests."""
-
+    def _build_url(self, endpoint: str, path=None) -> str:
         url = f"{self._base_url}/{endpoint.lstrip('/')}"
-
         if path:
-            url = f"{url}/{path.lstrip('/')}"
+            url = f"{url}/{str(path).lstrip('/')}"
+        return url
 
-        if body:
-            self.session.headers.update({"Content-type": "application/json"})
+    def request(self, method: str, endpoint: str, path=None, params=None, body=None):
+        """Handle all HTTP requests."""
 
-        self.session.headers.update({"Accept": "application/json"})
+        url = self._build_url(endpoint, path)
+
+        headers = {"Accept": "application/json"}
+        if body is not None:
+            headers["Content-type"] = "application/json"
 
         try:
             response = self.session.request(
-                method=method,
+                method=method.upper(),
                 url=url,
                 params=params,
                 json=body,
+                headers=headers,
                 timeout=self._timeout,
                 verify=self._validate_certs,
             )
+        except requests.exceptions.RequestException as exc:
+            raise XOAClientError(
+                f"Request failed for {method.upper()} {url}: {exc}"
+            ) from exc
 
-            if response.status_code == 204:
-                return None, response.status_code
+        if response.status_code == 204:
+            return None, response.status_code
 
-            return response.json(), response.status_code
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise XOAClientError(
+                f"Expected JSON response for {method.upper()} {url}, got non-JSON body "
+                f"with status {response.status_code}"
+            ) from exc
 
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}")
-            raise
+        return payload, response.status_code
 
     def delete(self, endpoint: str, path=None, params=None, body=None):
-        return self._request(
+        return self.request(
             method="DELETE", endpoint=endpoint, path=path, params=params, body=body
         )
 
     def get(self, endpoint: str, path=None, params=None, body=None):
-        return self._request(
+        return self.request(
             method="GET", endpoint=endpoint, path=path, params=params, body=body
         )
 
     def post(self, endpoint: str, path=None, params=None, body=None):
-        return self._request(
+        return self.request(
             method="POST", endpoint=endpoint, path=path, params=params, body=body
         )
 
     def put(self, endpoint: str, path=None, params=None, body=None):
-        return self._request(
+        return self.request(
             method="PUT", endpoint=endpoint, path=path, params=params, body=body
         )
