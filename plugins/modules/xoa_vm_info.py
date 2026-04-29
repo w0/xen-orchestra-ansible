@@ -236,8 +236,11 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # t
     new_xoa_client,
     validate_auth,
 )
-
-STANDARD_COLLECTION_PARAMS = {"fields", "filter", "limit", "ndjson", "markdown"}
+from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (  # type: ignore
+    STANDARD_COLLECTION_PARAMS,
+    allowed_request_parameters,
+    build_resource_path,
+)
 
 VM_SUBRESOURCES = {
     "alarms": {"supported_params": STANDARD_COLLECTION_PARAMS},
@@ -248,26 +251,6 @@ VM_SUBRESOURCES = {
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "vdis": {"supported_params": STANDARD_COLLECTION_PARAMS},
 }
-
-
-def _allowed_params_for_request(module):
-    """
-    Returns the allowed parameters for the current request shape.
-    """
-
-    vm_uuid = module.params["vm_uuid"]
-    subresource = module.params["subresource"]
-
-    if not vm_uuid:
-        # No VM UUID provided, return standard collection params
-        return STANDARD_COLLECTION_PARAMS
-
-    if not subresource:
-        # No subresource provided, return empty set
-        return set()
-
-    # Return the supported params for the given subresource
-    return VM_SUBRESOURCES[subresource]["supported_params"]
 
 
 def _provided_optional_params(module):
@@ -292,7 +275,7 @@ def _provided_optional_params(module):
     return provided
 
 
-def _validate_request_shape(module):
+def _validate_request_shape(module, allowed):
     """
     Validates the request shape and raises an error if it is invalid.
     """
@@ -307,7 +290,6 @@ def _validate_request_shape(module):
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
     provided = _provided_optional_params(module)
-    allowed = _allowed_params_for_request(module)
 
     unsupported = sorted(provided - allowed)
     if unsupported:
@@ -323,24 +305,6 @@ def _validate_request_shape(module):
             module.fail_json(
                 msg=f"Unsupported parameters for vm collection request: {', '.join(unsupported)}"
             )
-
-
-def _build_vm_path(module):
-    """
-    Builds the VM path for the current request shape.
-    """
-    vm_uuid = module.params["vm_uuid"]
-    subresource = module.params["subresource"]
-
-    if not vm_uuid:
-        # No VM UUID provided, return None to indicate a collection request
-        return None
-
-    if not subresource:
-        # No subresource provided, return the VM UUID to indicate a detail request
-        return vm_uuid
-
-    return f"{vm_uuid}/{subresource}"
 
 
 def _build_query_params(module, allowed_params):
@@ -383,11 +347,15 @@ def main():
         ),
     )
 
-    validate_auth(module)
-    _validate_request_shape(module)
+    object_id = module.params.get("vm_uuid")
+    subresource = module.params.get("subresource")
 
-    path = _build_vm_path(module)
-    allowed_params = _allowed_params_for_request(module)
+    validate_auth(module)
+    allowed_params = allowed_request_parameters(VM_SUBRESOURCES, object_id, subresource)
+
+    _validate_request_shape(module, allowed_params)
+
+    path = build_resource_path(object_id, subresource)
     params = _build_query_params(module, allowed_params)
 
     try:
