@@ -16,13 +16,11 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
 
 POOL_SUBRESOURCES = {
     "alarms": {"supported_params": STANDARD_COLLECTION_PARAMS},
-    "backup-jobs": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "dashboard": {"supported_params": {"ndjson"}},
     "messages": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "missing_patches": {"supported_params": set()},
     "stats": {"supported_params": {"granularity"}},
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
-    "vdis": {"supported_params": STANDARD_COLLECTION_PARAMS},
 }
 
 
