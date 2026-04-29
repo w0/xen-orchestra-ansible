@@ -19,3 +19,28 @@ def allowed_request_parameters(subresources: dict, object_id=None, subresource=N
         return set()
 
     return subresources[subresource].get("supported_params")
+
+
+def build_query_params(module):
+    params = {}
+
+    if module.params["fields"]:
+        params["fields"] = ",".join(module.params["fields"])
+    if module.params["filter"]:
+        params["filter"] = " ".join(module.params["filter"])
+    if module.params["limit"] is not None:
+        params["limit"] = module.params["limit"]
+    if module.params["ndjson"] is not None:
+        params["ndjson"] = module.params["ndjson"]
+    if module.params["markdown"] is not None:
+        params["markdown"] = module.params["markdown"]
+    if module.params["granularity"]:
+        params["granularity"] = module.params["granularity"]
+
+    return params or None
+
+
+def fail_on_unsupported_params(module, provided, allowed, label):
+    unsupported = sorted(provided - allowed)
+    if unsupported:
+        module.fail_json(msg=f"Unsupported parameters for {label}: {', '.join(unsupported)}")

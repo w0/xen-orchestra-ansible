@@ -239,7 +239,9 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # t
 from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (  # type: ignore
     STANDARD_COLLECTION_PARAMS,
     allowed_request_parameters,
+    build_query_params,
     build_resource_path,
+    fail_on_unsupported_params,
 )
 
 VM_SUBRESOURCES = {
@@ -275,10 +277,7 @@ def _provided_optional_params(module):
     return provided
 
 
-def _validate_request_shape(module, allowed):
-    """
-    Validates the request shape and raises an error if it is invalid.
-    """
+def _validate_request_shape(module):
 
     vm_uuid = module.params["vm_uuid"]
     subresource = module.params["subresource"]
@@ -290,8 +289,9 @@ def _validate_request_shape(module, allowed):
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
     provided = _provided_optional_params(module)
-
+    allowed = allowed_request_parameters(VM_SUBRESOURCES, vm_uuid, subresource)
     unsupported = sorted(provided - allowed)
+
     if unsupported:
         if vm_uuid and subresource:
             module.fail_json(
@@ -305,30 +305,6 @@ def _validate_request_shape(module, allowed):
             module.fail_json(
                 msg=f"Unsupported parameters for vm collection request: {', '.join(unsupported)}"
             )
-
-
-def _build_query_params(module, allowed_params):
-    params = {}
-
-    if "fields" in allowed_params and module.params["fields"]:
-        params["fields"] = ",".join(module.params["fields"])
-
-    if "filter" in allowed_params and module.params["filter"]:
-        params["filter"] = " ".join(module.params["filter"])
-
-    if "limit" in allowed_params and module.params["limit"] is not None:
-        params["limit"] = module.params["limit"]
-
-    if "ndjson" in allowed_params and module.params["ndjson"] is not None:
-        params["ndjson"] = module.params["ndjson"]
-
-    if "markdown" in allowed_params and module.params["markdown"] is not None:
-        params["markdown"] = module.params["markdown"]
-
-    if "granularity" in allowed_params and module.params["granularity"]:
-        params["granularity"] = module.params["granularity"]
-
-    return params or None
 
 
 def main():
@@ -347,16 +323,11 @@ def main():
         ),
     )
 
-    object_id = module.params.get("vm_uuid")
-    subresource = module.params.get("subresource")
-
     validate_auth(module)
-    allowed_params = allowed_request_parameters(VM_SUBRESOURCES, object_id, subresource)
+    _validate_request_shape(module)
 
-    _validate_request_shape(module, allowed_params)
-
-    path = build_resource_path(object_id, subresource)
-    params = _build_query_params(module, allowed_params)
+    path = build_resource_path(module.params.get("vm_uuid"), module.params.get("subresource"))
+    params = build_query_params(module)
 
     try:
         client = new_xoa_client(module)
