@@ -290,21 +290,18 @@ def _validate_request_shape(module):
 
     provided = _provided_optional_params(module)
     allowed = allowed_request_parameters(VM_SUBRESOURCES, vm_uuid, subresource)
-    unsupported = sorted(provided - allowed)
 
-    if unsupported:
-        if vm_uuid and subresource:
-            module.fail_json(
-                msg=f"Unsupported parameters for vm subresource '{subresource}': {', '.join(unsupported)}"
-            )
-        elif vm_uuid:
-            module.fail_json(
-                msg=f"Unsupported parameters for vm detail request: {', '.join(unsupported)}"
-            )
-        else:
-            module.fail_json(
-                msg=f"Unsupported parameters for vm collection request: {', '.join(unsupported)}"
-            )
+    if not vm_uuid:
+        allowed = STANDARD_COLLECTION_PARAMS
+        label = "vm collection request"
+    elif not subresource:
+        allowed = set()
+        label = "vm detail request"
+    else:
+        allowed = VM_SUBRESOURCES[subresource]["supported_params"]
+        label = f"vm subresource '{subresource}'"
+
+    fail_on_unsupported_params(module, provided, allowed, label)
 
 
 def main():
