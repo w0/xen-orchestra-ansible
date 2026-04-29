@@ -5,3 +5,4 @@ action_groups:
     - xoa_snapshot
     - xoa_snapshot_info
     - xoa_vm_info
+    - xoa_pool_info
