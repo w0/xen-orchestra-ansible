@@ -242,6 +242,7 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
     build_query_params,
     build_resource_path,
     fail_on_unsupported_params,
+    provided_optional_params,
 )
 
 VM_SUBRESOURCES = {
@@ -255,28 +256,6 @@ VM_SUBRESOURCES = {
 }
 
 
-def _provided_optional_params(module):
-    """
-    Returns the set of optional parameters provided by the user.
-    """
-    provided = set()
-
-    if module.params["fields"]:
-        provided.add("fields")
-    if module.params["filter"]:
-        provided.add("filter")
-    if module.params["limit"] is not None:
-        provided.add("limit")
-    if module.params["ndjson"] is not None:
-        provided.add("ndjson")
-    if module.params["markdown"] is not None:
-        provided.add("markdown")
-    if module.params["granularity"]:
-        provided.add("granularity")
-
-    return provided
-
-
 def _validate_request_shape(module):
 
     vm_uuid = module.params["vm_uuid"]
@@ -288,7 +267,7 @@ def _validate_request_shape(module):
     if subresource and subresource not in VM_SUBRESOURCES:
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
-    provided = _provided_optional_params(module)
+    provided = provided_optional_params(module)
     allowed = allowed_request_parameters(VM_SUBRESOURCES, vm_uuid, subresource)
 
     if not vm_uuid:

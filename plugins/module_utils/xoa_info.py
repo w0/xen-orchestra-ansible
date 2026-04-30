@@ -44,3 +44,25 @@ def fail_on_unsupported_params(module, provided, allowed, label):
     unsupported = sorted(provided - allowed)
     if unsupported:
         module.fail_json(msg=f"Unsupported parameters for {label}: {', '.join(unsupported)}")
+
+
+def provided_optional_params(module):
+    """
+    Returns the set of optional parameters provided by the user.
+    """
+    provided = set()
+
+    if module.params["fields"]:
+        provided.add("fields")
+    if module.params["filter"]:
+        provided.add("filter")
+    if module.params["limit"] is not None:
+        provided.add("limit")
+    if module.params["ndjson"] is not None:
+        provided.add("ndjson")
+    if module.params["markdown"] is not None:
+        provided.add("markdown")
+    if module.params["granularity"]:
+        provided.add("granularity")
+
+    return provided
