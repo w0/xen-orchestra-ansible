@@ -1,3 +1,181 @@
+#!/usr/bin/python
+
+DOCUMENTATION = r"""
+---
+module: xoa_group_info
+short_description: Gather information about Xen Orchestra groups
+description:
+  - Gather information about groups through the Xen Orchestra REST API.
+  - When O(group_uuid) is omitted, the module queries the group collection endpoint and can
+    filter, limit, and select fields from the returned group list.
+  - When O(group_uuid) is provided without O(subresource), the module returns detailed
+    information for the group identified by O(group_uuid).
+  - When both O(group_uuid) and O(subresource) are provided, the module returns the
+    requested subresource for that group.
+  - Only one subresource can be queried per task.
+version_added: "1.0.0"
+author:
+  - w0
+options:
+  api_host:
+    description:
+      - Xen Orchestra API host.
+    required: true
+    type: str
+  username:
+    description:
+      - Username for Xen Orchestra authentication.
+      - Use with C(password) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+  password:
+    description:
+      - Password for Xen Orchestra authentication.
+      - Use with C(username) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+    no_log: true
+  token:
+    description:
+      - API token for Xen Orchestra authentication.
+      - Use by itself when authenticating with a token.
+      - Must not be used with C(username) or C(password).
+    type: str
+    no_log: true
+  use_ssl:
+    description:
+      - Whether to connect to Xen Orchestra over HTTPS.
+    type: bool
+    default: true
+  validate_certs:
+    description:
+      - Whether to validate TLS certificates.
+    type: bool
+    default: true
+  group_uuid:
+    description:
+      - UUID of the group to query.
+      - When omitted, the module queries the group collection endpoint.
+      - Required when O(subresource) is specified.
+    type: str
+  subresource:
+    description:
+      - Group subresource to query for the group identified by O(group_uuid).
+      - The module validates subresource-specific query parameters before making the API call.
+      - O(tasks) and O(users) support O(fields), O(filter), O(limit), O(ndjson), and
+        O(markdown).
+    type: str
+    choices:
+      - tasks
+      - users
+  fields:
+    description:
+      - List of fields to request from the Xen Orchestra API.
+      - Values are joined with commas before being sent to Xen Orchestra.
+      - Supported for group collection queries and for the O(tasks) and O(users)
+        subresources.
+      - Ignored for group detail queries.
+    type: list
+    elements: str
+  filter:
+    description:
+      - List of filter expressions to apply to the API request.
+      - Values are joined with spaces before being sent to Xen Orchestra.
+      - Filter syntax is defined by the Xen Orchestra REST API.
+      - Supported for group collection queries and for the O(tasks) and O(users)
+        subresources.
+      - Ignored for group detail queries.
+    type: list
+    elements: str
+  limit:
+    description:
+      - Maximum number of objects to return.
+      - Supported for group collection queries and for the O(tasks) and O(users)
+        subresources.
+      - Ignored for group detail queries.
+    type: int
+  ndjson:
+    description:
+      - Request newline-delimited JSON output from the API when supported.
+      - Supported for group collection queries and for the O(tasks) and O(users)
+        subresources.
+      - Ignored for group detail queries.
+    type: bool
+  markdown:
+    description:
+      - Request markdown output from the API when supported.
+      - Supported for group collection queries and for the O(tasks) and O(users)
+        subresources.
+      - Ignored for group detail queries.
+    type: bool
+notes:
+  - Authentication must be either C(token) alone or C(username) and C(password) together.
+  - This module maps to the Xen Orchestra C(/groups), C(/groups/{id}), and selected
+    C(/groups/{id}/{subresource}) endpoints.
+  - The module validates unsupported parameter combinations before making the API call.
+requirements:
+  - python >= 3.9
+"""
+
+EXAMPLES = r"""
+- name: List groups with selected fields
+  w0.xen_orchestra.xoa_group_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    fields:
+      - id
+      - name
+    limit: 10
+
+- name: Get a single group by UUID
+  w0.xen_orchestra.xoa_group_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    group_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+
+- name: Get users for a group
+  w0.xen_orchestra.xoa_group_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    group_uuid: cef5f68c-61ae-3831-d2e6-1590d4934acf
+    subresource: users
+    fields:
+      - id
+      - email
+    limit: 5
+
+- name: Get group tasks with token authentication
+  w0.xen_orchestra.xoa_group_info:
+    api_host: xo.example.com
+    token: "{{ xo_token }}"
+    group_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    subresource: tasks
+    filter:
+      - status:failure
+    limit: 5
+"""
+
+RETURN = r"""
+result:
+  description:
+    - Data returned by the Xen Orchestra API.
+    - The return shape depends on the request mode.
+    - Group collection queries return a list of group records.
+    - Group detail queries return a single group object.
+    - Subresource queries return the corresponding subresource payload.
+  returned: success
+  type: raw
+changed:
+  description:
+    - Always C(false) for this info module.
+  returned: always
+  type: bool
+  sample: false
+"""
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # type: ignore
     build_xoa_argument_spec,

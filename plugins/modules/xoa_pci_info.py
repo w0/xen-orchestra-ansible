@@ -1,3 +1,146 @@
+#!/usr/bin/python
+
+DOCUMENTATION = r"""
+---
+module: xoa_pci_info
+short_description: Gather information about Xen Orchestra PCI devices
+description:
+  - Gather information about PCI devices through the Xen Orchestra REST API.
+  - When O(pci_uuid) is omitted, the module queries the PCI device collection endpoint and can
+    filter, limit, and select fields from the returned PCI device list.
+  - When O(pci_uuid) is provided, the module returns detailed information for the PCI device
+    identified by O(pci_uuid).
+version_added: "1.0.0"
+author:
+  - w0
+options:
+  api_host:
+    description:
+      - Xen Orchestra API host.
+    required: true
+    type: str
+  username:
+    description:
+      - Username for Xen Orchestra authentication.
+      - Use with C(password) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+  password:
+    description:
+      - Password for Xen Orchestra authentication.
+      - Use with C(username) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+    no_log: true
+  token:
+    description:
+      - API token for Xen Orchestra authentication.
+      - Use by itself when authenticating with a token.
+      - Must not be used with C(username) or C(password).
+    type: str
+    no_log: true
+  use_ssl:
+    description:
+      - Whether to connect to Xen Orchestra over HTTPS.
+    type: bool
+    default: true
+  validate_certs:
+    description:
+      - Whether to validate TLS certificates.
+    type: bool
+    default: true
+  pci_uuid:
+    description:
+      - UUID of the PCI device to query.
+      - When omitted, the module queries the PCI device collection endpoint.
+    type: str
+  fields:
+    description:
+      - List of fields to request from the Xen Orchestra API.
+      - Values are joined with commas before being sent to Xen Orchestra.
+      - Supported for PCI device collection queries.
+      - Ignored for PCI device detail queries.
+    type: list
+    elements: str
+  filter:
+    description:
+      - List of filter expressions to apply to the API request.
+      - Values are joined with spaces before being sent to Xen Orchestra.
+      - Filter syntax is defined by the Xen Orchestra REST API.
+      - Supported for PCI device collection queries.
+      - Ignored for PCI device detail queries.
+    type: list
+    elements: str
+  limit:
+    description:
+      - Maximum number of objects to return.
+      - Supported for PCI device collection queries.
+      - Ignored for PCI device detail queries.
+    type: int
+  ndjson:
+    description:
+      - Request newline-delimited JSON output from the API when supported.
+      - Supported for PCI device collection queries.
+      - Ignored for PCI device detail queries.
+    type: bool
+  markdown:
+    description:
+      - Request markdown output from the API when supported.
+      - Supported for PCI device collection queries.
+      - Ignored for PCI device detail queries.
+    type: bool
+notes:
+  - Authentication must be either C(token) alone or C(username) and C(password) together.
+  - This module maps to the Xen Orchestra C(/pcis), and C(/pcis/{id}) endpoints.
+  - The module validates unsupported parameter combinations before making the API call.
+requirements:
+  - python >= 3.9
+"""
+
+EXAMPLES = r"""
+- name: List PCI devices with selected fields
+  w0.xen_orchestra.xoa_pci_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    fields:
+      - uuid
+      - id
+    limit: 10
+
+- name: Get a single PCI device by UUID
+  w0.xen_orchestra.xoa_pci_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    pci_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+
+- name: List PCI devices with token authentication
+  w0.xen_orchestra.xoa_pci_info:
+    api_host: xo.example.com
+    token: "{{ xo_token }}"
+    filter:
+      - attached:true
+    limit: 5
+"""
+
+RETURN = r"""
+result:
+  description:
+    - Data returned by the Xen Orchestra API.
+    - The return shape depends on the request mode.
+    - PCI device collection queries return a list of PCI device records.
+    - PCI device detail queries return a single PCI device object.
+  returned: success
+  type: raw
+changed:
+  description:
+    - Always C(false) for this info module.
+  returned: always
+  type: bool
+  sample: false
+"""
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # type: ignore
     build_xoa_argument_spec,

@@ -1,3 +1,216 @@
+#!/usr/bin/python
+
+DOCUMENTATION = r"""
+---
+module: xoa_user_info
+short_description: Gather information about Xen Orchestra users
+description:
+  - Gather information about users through the Xen Orchestra REST API.
+  - When O(user_uuid) is omitted, the module queries the user collection endpoint and can
+    filter, limit, and select fields from the returned user list.
+  - When O(user_uuid) is provided without O(subresource), the module returns detailed
+    information for the user identified by O(user_uuid).
+  - When both O(user_uuid) and O(subresource) are provided, the module returns the
+    requested subresource for that user.
+  - Only one subresource can be queried per task.
+  - Subresource documentation is intentionally conservative and only describes behavior that
+    is clearly supported by the module implementation.
+version_added: "1.0.0"
+author:
+  - w0
+options:
+  api_host:
+    description:
+      - Xen Orchestra API host.
+    required: true
+    type: str
+  username:
+    description:
+      - Username for Xen Orchestra authentication.
+      - Use with C(password) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+  password:
+    description:
+      - Password for Xen Orchestra authentication.
+      - Use with C(username) when authenticating with username and password.
+      - Must not be used with C(token).
+    type: str
+    no_log: true
+  token:
+    description:
+      - API token for Xen Orchestra authentication.
+      - Use by itself when authenticating with a token.
+      - Must not be used with C(username) or C(password).
+    type: str
+    no_log: true
+  use_ssl:
+    description:
+      - Whether to connect to Xen Orchestra over HTTPS.
+    type: bool
+    default: true
+  validate_certs:
+    description:
+      - Whether to validate TLS certificates.
+    type: bool
+    default: true
+  user_uuid:
+    description:
+      - UUID of the user to query.
+      - When omitted, the module queries the user collection endpoint.
+      - Required when O(subresource) is specified.
+    type: str
+  subresource:
+    description:
+      - User subresource to query for the user identified by O(user_uuid).
+      - The module validates subresource-specific query parameters before making the API call.
+      - O(groups) and O(tasks) support O(fields), O(filter), O(limit), O(ndjson), and
+        O(markdown).
+      - O(authentication_tokens) has module-specific support that appears narrower than the
+        generic collection parameter set. Use only clearly supported query options.
+      - O(acl-privileges) behavior appears inconsistent in the current implementation, so only
+        the subresource name itself is documented here.
+    type: str
+    choices:
+      - acl-privileges
+      - authentication_tokens
+      - groups
+      - tasks
+  fields:
+    description:
+      - List of fields to request from the Xen Orchestra API.
+      - Values are joined with commas before being sent to Xen Orchestra.
+      - Supported for user collection queries and for the O(groups) and O(tasks)
+        subresources.
+      - May not be supported for all user subresources.
+      - Ignored for user detail queries.
+    type: list
+    elements: str
+  filter:
+    description:
+      - List of filter expressions to apply to the API request.
+      - Values are joined with spaces before being sent to Xen Orchestra.
+      - Filter syntax is defined by the Xen Orchestra REST API.
+      - Supported for user collection queries and for the O(groups) and O(tasks)
+        subresources.
+      - Also appears to be supported for O(subresource=authentication_tokens).
+      - Ignored for user detail queries.
+    type: list
+    elements: str
+  limit:
+    description:
+      - Maximum number of objects to return.
+      - Supported for user collection queries and for the O(groups) and O(tasks)
+        subresources.
+      - Also appears to be supported for O(subresource=authentication_tokens).
+      - Ignored for user detail queries.
+    type: int
+  ndjson:
+    description:
+      - Request newline-delimited JSON output from the API when supported.
+      - Supported for user collection queries and for the O(groups) and O(tasks)
+        subresources.
+      - Ignored for user detail queries.
+      - Not documented for O(authentication_tokens) or O(acl-privileges).
+    type: bool
+  markdown:
+    description:
+      - Request markdown output from the API when supported.
+      - Supported for user collection queries and for the O(groups) and O(tasks)
+        subresources.
+      - Ignored for user detail queries.
+      - Not documented for O(authentication_tokens) or O(acl-privileges).
+    type: bool
+notes:
+  - Authentication must be either C(token) alone or C(username) and C(password) together.
+  - This module maps to the Xen Orchestra C(/users), C(/users/{id}), and selected
+    C(/users/{id}/{subresource}) endpoints.
+  - The module validates unsupported parameter combinations before making the API call.
+  - Documentation for O(authentication_tokens) and O(acl-privileges) is intentionally limited
+    to behavior that is clear from the current module code.
+requirements:
+  - python >= 3.9
+"""
+
+EXAMPLES = r"""
+- name: List users with selected fields
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    fields:
+      - id
+      - email
+      - permission
+    limit: 10
+
+- name: Get a single user by UUID
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+
+- name: Get groups for a user
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    user_uuid: cef5f68c-61ae-3831-d2e6-1590d4934acf
+    subresource: groups
+    fields:
+      - id
+      - name
+    limit: 5
+
+- name: Get user tasks with token authentication
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    token: "{{ xo_token }}"
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    subresource: tasks
+    filter:
+      - status:failure
+    limit: 5
+
+- name: Get authentication tokens for a user
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    subresource: authentication_tokens
+    filter:
+      - active:true
+    limit: 5
+
+- name: Get ACL privileges for a user
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    subresource: acl-privileges
+"""
+
+RETURN = r"""
+result:
+  description:
+    - Data returned by the Xen Orchestra API.
+    - The return shape depends on the request mode.
+    - User collection queries return a list of user records.
+    - User detail queries return a single user object.
+    - Subresource queries return the corresponding subresource payload.
+  returned: success
+  type: raw
+changed:
+  description:
+    - Always C(false) for this info module.
+  returned: always
+  type: bool
+  sample: false
+"""
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa import (  # type: ignore
     build_xoa_argument_spec,
