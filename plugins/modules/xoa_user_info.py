@@ -1,15 +1,17 @@
+#!/usr/bin/python
+
 DOCUMENTATION = r"""
 ---
-module: xoa_pif_info
-short_description: Gather information about Xen Orchestra physical interfaces
+module: xoa_user_info
+short_description: Gather information about Xen Orchestra users
 description:
-  - Gather information about physical interfaces through the Xen Orchestra REST API.
-  - When O(pif_uuid) is omitted, the module queries the physical interface collection endpoint
-    and can filter, limit, and select fields from the returned physical interface list.
-  - When O(pif_uuid) is provided without O(subresource), the module returns detailed
-    information for the physical interface identified by O(pif_uuid).
-  - When both O(pif_uuid) and O(subresource) are provided, the module returns the
-    requested subresource for that physical interface.
+  - Gather information about users through the Xen Orchestra REST API.
+  - When O(user_uuid) is omitted, the module queries the user collection endpoint and can
+    filter, limit, and select fields from the returned user list.
+  - When O(user_uuid) is provided without O(subresource), the module returns detailed
+    information for the user identified by O(user_uuid).
+  - When both O(user_uuid) and O(subresource) are provided, the module returns the
+    requested subresource for that user.
   - Only one subresource can be queried per task.
 version_added: "1.0.0"
 author:
@@ -50,31 +52,33 @@ options:
       - Whether to validate TLS certificates.
     type: bool
     default: true
-  pif_uuid:
+  user_uuid:
     description:
-      - UUID of the physical interface to query.
-      - When omitted, the module queries the physical interface collection endpoint.
+      - UUID of the user to query.
+      - When omitted, the module queries the user collection endpoint.
       - Required when O(subresource) is specified.
     type: str
   subresource:
     description:
-      - Physical interface subresource to query for the physical interface identified by
-        O(pif_uuid).
+      - User subresource to query for the user identified by O(user_uuid).
       - The module validates subresource-specific query parameters before making the API call.
-      - O(alarms), O(messages), and O(tasks) support O(fields), O(filter), O(limit),
-        O(ndjson), and O(markdown).
+      - O(groups) and O(tasks) support O(fields), O(filter), O(limit), O(ndjson), and
+        O(markdown).
+      - O(acl-privileges) supports O(fields), O(filter), O(limit), and O(ndjson).
+      - O(authentication_tokens) supports O(filter) and O(limit).
     type: str
     choices:
-      - alarms
-      - messages
+      - acl-privileges
+      - authentication_tokens
+      - groups
       - tasks
   fields:
     description:
       - List of fields to request from the Xen Orchestra API.
       - Values are joined with commas before being sent to Xen Orchestra.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for user collection queries and for the O(acl-privileges), O(groups),
+        and O(tasks) subresources.
+      - Ignored for user detail queries.
     type: list
     elements: str
   filter:
@@ -82,95 +86,100 @@ options:
       - List of filter expressions to apply to the API request.
       - Values are joined with spaces before being sent to Xen Orchestra.
       - Filter syntax is defined by the Xen Orchestra REST API.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for user collection queries and for all user subresources.
+      - Ignored for user detail queries.
     type: list
     elements: str
   limit:
     description:
       - Maximum number of objects to return.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for user collection queries and for all user subresources.
+      - Ignored for user detail queries.
     type: int
   ndjson:
     description:
       - Request newline-delimited JSON output from the API when supported.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for user collection queries and for the O(acl-privileges), O(groups),
+        and O(tasks) subresources.
+      - Ignored for user detail queries.
+      - Ignored for O(authentication_tokens).
     type: bool
   markdown:
     description:
       - Request markdown output from the API when supported.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for user collection queries and for the O(groups) and O(tasks)
+        subresources.
+      - Ignored for user detail queries.
+      - Ignored for O(acl-privileges) and O(authentication_tokens).
     type: bool
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
-  - This module maps to the Xen Orchestra C(/pifs), C(/pifs/{id}), and selected
-    C(/pifs/{id}/{subresource}) endpoints.
+  - This module maps to the Xen Orchestra C(/users), C(/users/{id}), and selected
+    C(/users/{id}/{subresource}) endpoints.
   - The module validates unsupported parameter combinations before making the API call.
 requirements:
   - python >= 3.9
 """
 
 EXAMPLES = r"""
-- name: List physical interfaces with selected fields
-  w0.xen_orchestra.xoa_pif_info:
+- name: List users with selected fields
+  w0.xen_orchestra.xoa_user_info:
     api_host: xo.example.com
     username: admin
     password: secret
     fields:
-      - uuid
-      - device
-      - ip
+      - id
+      - email
+      - permission
     limit: 10
 
-- name: Get a single physical interface by UUID
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get a single user by UUID
+  w0.xen_orchestra.xoa_user_info:
     api_host: xo.example.com
     username: admin
     password: secret
-    pif_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
 
-- name: Get physical interface messages with selected fields
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get groups for a user
+  w0.xen_orchestra.xoa_user_info:
     api_host: xo.example.com
     username: admin
     password: secret
-    pif_uuid: cef5f68c-61ae-3831-d2e6-1590d4934acf
-    subresource: messages
+    user_uuid: cef5f68c-61ae-3831-d2e6-1590d4934acf
+    subresource: groups
     fields:
-      - name
       - id
-      - $object
-    filter:
-      - name:PIF_PLUGGED
+      - name
     limit: 5
 
-- name: Get physical interface alarms
-  w0.xen_orchestra.xoa_pif_info:
-    api_host: xo.example.com
-    username: admin
-    password: secret
-    pif_uuid: f07ab729-c0e8-721c-45ec-f11276377030
-    subresource: alarms
-    fields:
-      - id
-      - time
-
-- name: Get physical interface tasks with token authentication
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get user tasks with token authentication
+  w0.xen_orchestra.xoa_user_info:
     api_host: xo.example.com
     token: "{{ xo_token }}"
-    pif_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
     subresource: tasks
     filter:
       - status:failure
     limit: 5
+
+- name: Get authentication tokens for a user
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    subresource: authentication_tokens
+    filter:
+      - active:true
+    limit: 5
+
+- name: Get ACL privileges for a user
+  w0.xen_orchestra.xoa_user_info:
+    api_host: xo.example.com
+    username: admin
+    password: secret
+    user_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    subresource: acl-privileges
 """
 
 RETURN = r"""
@@ -178,8 +187,8 @@ result:
   description:
     - Data returned by the Xen Orchestra API.
     - The return shape depends on the request mode.
-    - Physical interface collection queries return a list of physical interface records.
-    - Physical interface detail queries return a single physical interface object.
+    - User collection queries return a list of user records.
+    - User detail queries return a single user object.
     - Subresource queries return the corresponding subresource payload.
   returned: success
   type: raw
@@ -206,36 +215,37 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
     provided_optional_params,
 )
 
-PIF_SUBRESOURCES = {
-    "alarms": {"supported_params": STANDARD_COLLECTION_PARAMS},
-    "messages": {"supported_params": STANDARD_COLLECTION_PARAMS},
+USER_SUBRESOURCES = {
+    "acl-privileges": {"supported_params": {"id", "fields", "ndjson", "filter", "limit"}},
+    "authentication_tokens": {"supported_params": {"id", "filter", "limit"}},
+    "groups": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
 }
 
 
 def _validate_request_shape(module):
 
-    pif_uuid = module.params["pif_uuid"]
+    user_uuid = module.params["user_uuid"]
     subresource = module.params["subresource"]
 
-    if subresource and not pif_uuid:
-        module.fail_json(msg="subresource requires pif_uuid")
+    if subresource and not user_uuid:
+        module.fail_json(msg="subresource requires user_uuid")
 
-    if subresource and subresource not in PIF_SUBRESOURCES:
+    if subresource and subresource not in USER_SUBRESOURCES:
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
     provided = provided_optional_params(module)
-    allowed = allowed_request_parameters(PIF_SUBRESOURCES, pif_uuid, subresource)
+    allowed = allowed_request_parameters(USER_SUBRESOURCES, user_uuid, subresource)
 
-    if not pif_uuid:
+    if not user_uuid:
         allowed = STANDARD_COLLECTION_PARAMS
-        label = "pif collection request"
+        label = "user collection request"
     elif not subresource:
         allowed = set()
-        label = "pif detail request"
+        label = "user detail request"
     else:
-        allowed = PIF_SUBRESOURCES[subresource]["supported_params"]
-        label = f"pif subresource '{subresource}'"
+        allowed = USER_SUBRESOURCES[subresource]["supported_params"]
+        label = f"user subresource '{subresource}'"
 
     fail_on_unsupported_params(module, provided, allowed, label)
 
@@ -243,8 +253,8 @@ def _validate_request_shape(module):
 def main():
     module = AnsibleModule(
         argument_spec=build_xoa_argument_spec(
-            pif_uuid=dict(type="str"),
-            subresource=dict(type="str", choices=list(PIF_SUBRESOURCES.keys())),
+            user_uuid=dict(type="str"),
+            subresource=dict(type="str", choices=list(USER_SUBRESOURCES.keys())),
             fields=dict(type="list", elements="str"),
             filter=dict(type="list", elements="str"),
             limit=dict(type="int"),
@@ -256,12 +266,12 @@ def main():
     validate_auth(module)
     _validate_request_shape(module)
 
-    path = build_resource_path(module.params["pif_uuid"], module.params["subresource"])
+    path = build_resource_path(module.params["user_uuid"], module.params["subresource"])
     params = build_query_params(module)
 
     try:
         client = new_xoa_client(module)
-        response, status_code = client.get("pifs", path, params=params)
+        response, status_code = client.get("users", path, params=params)
 
     except Exception as e:
         module.fail_json(msg=str(e))

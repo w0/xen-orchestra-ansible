@@ -1,15 +1,17 @@
+#!/usr/bin/python
+
 DOCUMENTATION = r"""
 ---
-module: xoa_pif_info
-short_description: Gather information about Xen Orchestra physical interfaces
+module: xoa_network_info
+short_description: Gather information about Xen Orchestra networks
 description:
-  - Gather information about physical interfaces through the Xen Orchestra REST API.
-  - When O(pif_uuid) is omitted, the module queries the physical interface collection endpoint
-    and can filter, limit, and select fields from the returned physical interface list.
-  - When O(pif_uuid) is provided without O(subresource), the module returns detailed
-    information for the physical interface identified by O(pif_uuid).
-  - When both O(pif_uuid) and O(subresource) are provided, the module returns the
-    requested subresource for that physical interface.
+  - Gather information about networks through the Xen Orchestra REST API.
+  - When O(network_uuid) is omitted, the module queries the network collection endpoint and can
+    filter, limit, and select fields from the returned network list.
+  - When O(network_uuid) is provided without O(subresource), the module returns detailed
+    information for the network identified by O(network_uuid).
+  - When both O(network_uuid) and O(subresource) are provided, the module returns the
+    requested subresource for that network.
   - Only one subresource can be queried per task.
 version_added: "1.0.0"
 author:
@@ -50,16 +52,15 @@ options:
       - Whether to validate TLS certificates.
     type: bool
     default: true
-  pif_uuid:
+  network_uuid:
     description:
-      - UUID of the physical interface to query.
-      - When omitted, the module queries the physical interface collection endpoint.
+      - UUID of the network to query.
+      - When omitted, the module queries the network collection endpoint.
       - Required when O(subresource) is specified.
     type: str
   subresource:
     description:
-      - Physical interface subresource to query for the physical interface identified by
-        O(pif_uuid).
+      - Network subresource to query for the network identified by O(network_uuid).
       - The module validates subresource-specific query parameters before making the API call.
       - O(alarms), O(messages), and O(tasks) support O(fields), O(filter), O(limit),
         O(ndjson), and O(markdown).
@@ -72,9 +73,9 @@ options:
     description:
       - List of fields to request from the Xen Orchestra API.
       - Values are joined with commas before being sent to Xen Orchestra.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for network collection queries and for the O(alarms), O(messages), and
+        O(tasks) subresources.
+      - Ignored for network detail queries.
     type: list
     elements: str
   filter:
@@ -82,91 +83,91 @@ options:
       - List of filter expressions to apply to the API request.
       - Values are joined with spaces before being sent to Xen Orchestra.
       - Filter syntax is defined by the Xen Orchestra REST API.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for network collection queries and for the O(alarms), O(messages), and
+        O(tasks) subresources.
+      - Ignored for network detail queries.
     type: list
     elements: str
   limit:
     description:
       - Maximum number of objects to return.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for network collection queries and for the O(alarms), O(messages), and
+        O(tasks) subresources.
+      - Ignored for network detail queries.
     type: int
   ndjson:
     description:
       - Request newline-delimited JSON output from the API when supported.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for network collection queries and for the O(alarms), O(messages), and
+        O(tasks) subresources.
+      - Ignored for network detail queries.
     type: bool
   markdown:
     description:
       - Request markdown output from the API when supported.
-      - Supported for physical interface collection queries and for the O(alarms),
-        O(messages), and O(tasks) subresources.
-      - Ignored for physical interface detail queries.
+      - Supported for network collection queries and for the O(alarms), O(messages), and
+        O(tasks) subresources.
+      - Ignored for network detail queries.
     type: bool
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
-  - This module maps to the Xen Orchestra C(/pifs), C(/pifs/{id}), and selected
-    C(/pifs/{id}/{subresource}) endpoints.
+  - This module maps to the Xen Orchestra C(/networks), C(/networks/{id}), and selected
+    C(/networks/{id}/{subresource}) endpoints.
   - The module validates unsupported parameter combinations before making the API call.
 requirements:
   - python >= 3.9
 """
 
 EXAMPLES = r"""
-- name: List physical interfaces with selected fields
-  w0.xen_orchestra.xoa_pif_info:
+- name: List networks with selected fields
+  w0.xen_orchestra.xoa_network_info:
     api_host: xo.example.com
     username: admin
     password: secret
     fields:
       - uuid
-      - device
-      - ip
+      - name_label
+      - defaultIsLocked
     limit: 10
 
-- name: Get a single physical interface by UUID
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get a single network by UUID
+  w0.xen_orchestra.xoa_network_info:
     api_host: xo.example.com
     username: admin
     password: secret
-    pif_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    network_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
 
-- name: Get physical interface messages with selected fields
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get network messages with selected fields
+  w0.xen_orchestra.xoa_network_info:
     api_host: xo.example.com
     username: admin
     password: secret
-    pif_uuid: cef5f68c-61ae-3831-d2e6-1590d4934acf
+    network_uuid: cef5f68c-61ae-3831-d2e6-1590d4934acf
     subresource: messages
     fields:
       - name
       - id
       - $object
     filter:
-      - name:PIF_PLUGGED
+      - name:NETWORK_CREATED
     limit: 5
 
-- name: Get physical interface alarms
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get network alarms
+  w0.xen_orchestra.xoa_network_info:
     api_host: xo.example.com
     username: admin
     password: secret
-    pif_uuid: f07ab729-c0e8-721c-45ec-f11276377030
+    network_uuid: f07ab729-c0e8-721c-45ec-f11276377030
     subresource: alarms
     fields:
       - id
       - time
 
-- name: Get physical interface tasks with token authentication
-  w0.xen_orchestra.xoa_pif_info:
+- name: Get network tasks with token authentication
+  w0.xen_orchestra.xoa_network_info:
     api_host: xo.example.com
     token: "{{ xo_token }}"
-    pif_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    network_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
     subresource: tasks
     filter:
       - status:failure
@@ -178,8 +179,8 @@ result:
   description:
     - Data returned by the Xen Orchestra API.
     - The return shape depends on the request mode.
-    - Physical interface collection queries return a list of physical interface records.
-    - Physical interface detail queries return a single physical interface object.
+    - Network collection queries return a list of network records.
+    - Network detail queries return a single network object.
     - Subresource queries return the corresponding subresource payload.
   returned: success
   type: raw
@@ -206,7 +207,7 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
     provided_optional_params,
 )
 
-PIF_SUBRESOURCES = {
+NETWORK_SUBRESOURCES = {
     "alarms": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "messages": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
@@ -215,27 +216,27 @@ PIF_SUBRESOURCES = {
 
 def _validate_request_shape(module):
 
-    pif_uuid = module.params["pif_uuid"]
+    network_uuid = module.params["network_uuid"]
     subresource = module.params["subresource"]
 
-    if subresource and not pif_uuid:
-        module.fail_json(msg="subresource requires pif_uuid")
+    if subresource and not network_uuid:
+        module.fail_json(msg="subresource requires network_uuid")
 
-    if subresource and subresource not in PIF_SUBRESOURCES:
+    if subresource and subresource not in NETWORK_SUBRESOURCES:
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
     provided = provided_optional_params(module)
-    allowed = allowed_request_parameters(PIF_SUBRESOURCES, pif_uuid, subresource)
+    allowed = allowed_request_parameters(NETWORK_SUBRESOURCES, network_uuid, subresource)
 
-    if not pif_uuid:
+    if not network_uuid:
         allowed = STANDARD_COLLECTION_PARAMS
-        label = "pif collection request"
+        label = "network collection request"
     elif not subresource:
         allowed = set()
-        label = "pif detail request"
+        label = "network detail request"
     else:
-        allowed = PIF_SUBRESOURCES[subresource]["supported_params"]
-        label = f"pif subresource '{subresource}'"
+        allowed = NETWORK_SUBRESOURCES[subresource]["supported_params"]
+        label = f"network subresource '{subresource}'"
 
     fail_on_unsupported_params(module, provided, allowed, label)
 
@@ -243,8 +244,8 @@ def _validate_request_shape(module):
 def main():
     module = AnsibleModule(
         argument_spec=build_xoa_argument_spec(
-            pif_uuid=dict(type="str"),
-            subresource=dict(type="str", choices=list(PIF_SUBRESOURCES.keys())),
+            network_uuid=dict(type="str"),
+            subresource=dict(type="str", choices=list(NETWORK_SUBRESOURCES.keys())),
             fields=dict(type="list", elements="str"),
             filter=dict(type="list", elements="str"),
             limit=dict(type="int"),
@@ -256,12 +257,12 @@ def main():
     validate_auth(module)
     _validate_request_shape(module)
 
-    path = build_resource_path(module.params["pif_uuid"], module.params["subresource"])
+    path = build_resource_path(module.params["network_uuid"], module.params["subresource"])
     params = build_query_params(module)
 
     try:
         client = new_xoa_client(module)
-        response, status_code = client.get("pifs", path, params=params)
+        response, status_code = client.get("networks", path, params=params)
 
     except Exception as e:
         module.fail_json(msg=str(e))

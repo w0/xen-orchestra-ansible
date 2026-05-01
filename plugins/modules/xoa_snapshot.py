@@ -87,7 +87,7 @@ notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
   - This module maps to the Xen Orchestra C(/vms/{id}/actions/snapshot) and C(/vm-snapshots/{id}) endpoints.
   - C(rollback) is accepted as a state but only emits a warning and returns C(changed=false).
-  - This module supports check mode, but check mode does not currently change behavior.
+  - This module does not support check mode.
 """
 
 EXAMPLES = r"""
@@ -222,7 +222,7 @@ def main():
             ("state", "absent", ["snapshot_uuid"]),
             ("state", "rollback", ["snapshot_uuid"]),
         ],
-        supports_check_mode=True,
+        supports_check_mode=False,
     )
 
     validate_auth(module)
