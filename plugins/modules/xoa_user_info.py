@@ -13,8 +13,6 @@ description:
   - When both O(user_uuid) and O(subresource) are provided, the module returns the
     requested subresource for that user.
   - Only one subresource can be queried per task.
-  - Subresource documentation is intentionally conservative and only describes behavior that
-    is clearly supported by the module implementation.
 version_added: "1.0.0"
 author:
   - w0
@@ -66,10 +64,8 @@ options:
       - The module validates subresource-specific query parameters before making the API call.
       - O(groups) and O(tasks) support O(fields), O(filter), O(limit), O(ndjson), and
         O(markdown).
-      - O(authentication_tokens) has module-specific support that appears narrower than the
-        generic collection parameter set. Use only clearly supported query options.
-      - O(acl-privileges) behavior appears inconsistent in the current implementation, so only
-        the subresource name itself is documented here.
+      - O(acl-privileges) supports O(fields), O(filter), O(limit), and O(ndjson).
+      - O(authentication_tokens) supports O(filter) and O(limit).
     type: str
     choices:
       - acl-privileges
@@ -80,9 +76,8 @@ options:
     description:
       - List of fields to request from the Xen Orchestra API.
       - Values are joined with commas before being sent to Xen Orchestra.
-      - Supported for user collection queries and for the O(groups) and O(tasks)
-        subresources.
-      - May not be supported for all user subresources.
+      - Supported for user collection queries and for the O(acl-privileges), O(groups),
+        and O(tasks) subresources.
       - Ignored for user detail queries.
     type: list
     elements: str
@@ -91,27 +86,23 @@ options:
       - List of filter expressions to apply to the API request.
       - Values are joined with spaces before being sent to Xen Orchestra.
       - Filter syntax is defined by the Xen Orchestra REST API.
-      - Supported for user collection queries and for the O(groups) and O(tasks)
-        subresources.
-      - Also appears to be supported for O(subresource=authentication_tokens).
+      - Supported for user collection queries and for all user subresources.
       - Ignored for user detail queries.
     type: list
     elements: str
   limit:
     description:
       - Maximum number of objects to return.
-      - Supported for user collection queries and for the O(groups) and O(tasks)
-        subresources.
-      - Also appears to be supported for O(subresource=authentication_tokens).
+      - Supported for user collection queries and for all user subresources.
       - Ignored for user detail queries.
     type: int
   ndjson:
     description:
       - Request newline-delimited JSON output from the API when supported.
-      - Supported for user collection queries and for the O(groups) and O(tasks)
-        subresources.
+      - Supported for user collection queries and for the O(acl-privileges), O(groups),
+        and O(tasks) subresources.
       - Ignored for user detail queries.
-      - Not documented for O(authentication_tokens) or O(acl-privileges).
+      - Ignored for O(authentication_tokens).
     type: bool
   markdown:
     description:
@@ -119,15 +110,13 @@ options:
       - Supported for user collection queries and for the O(groups) and O(tasks)
         subresources.
       - Ignored for user detail queries.
-      - Not documented for O(authentication_tokens) or O(acl-privileges).
+      - Ignored for O(acl-privileges) and O(authentication_tokens).
     type: bool
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
   - This module maps to the Xen Orchestra C(/users), C(/users/{id}), and selected
     C(/users/{id}/{subresource}) endpoints.
   - The module validates unsupported parameter combinations before making the API call.
-  - Documentation for O(authentication_tokens) and O(acl-privileges) is intentionally limited
-    to behavior that is clear from the current module code.
 requirements:
   - python >= 3.9
 """

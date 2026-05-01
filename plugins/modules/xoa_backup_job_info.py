@@ -91,7 +91,7 @@ options:
     type: bool
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
-  - This module maps to the Xen Orchestra C(/backup-jobs), and
+  - This module maps to the Xen Orchestra C(/backup-jobs) and
     C(/backup-jobs/{id}) endpoints.
   - The module validates unsupported parameter combinations before making the API call.
 requirements:

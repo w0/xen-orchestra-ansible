@@ -2,14 +2,14 @@
 
 DOCUMENTATION = r"""
 ---
-module: xoa_restore_logs_info
+module: xoa_restore_log_info
 short_description: Gather information about Xen Orchestra restore logs
 description:
   - Gather information about restore logs through the Xen Orchestra REST API.
-  - When O(restore_logs_uuid) is omitted, the module queries the restore log collection
+  - When O(restore_log_uuid) is omitted, the module queries the restore log collection
     endpoint and can filter, limit, and select fields from the returned restore log list.
-  - When O(restore_logs_uuid) is provided, the module returns detailed information for the
-    restore log identified by O(restore_logs_uuid).
+  - When O(restore_log_uuid) is provided, the module returns detailed information for the
+    restore log identified by O(restore_log_uuid).
 version_added: "1.0.0"
 author:
   - w0
@@ -49,7 +49,7 @@ options:
       - Whether to validate TLS certificates.
     type: bool
     default: true
-  restore_logs_uuid:
+  restore_log_uuid:
     description:
       - UUID of the restore log to query.
       - When omitted, the module queries the restore log collection endpoint.
@@ -91,7 +91,7 @@ options:
     type: bool
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
-  - This module maps to the Xen Orchestra C(/restore-logs), and
+  - This module maps to the Xen Orchestra C(/restore-logs) and
     C(/restore-logs/{id}) endpoints.
   - The module validates unsupported parameter combinations before making the API call.
 requirements:
@@ -100,7 +100,7 @@ requirements:
 
 EXAMPLES = r"""
 - name: List restore logs with selected fields
-  w0.xen_orchestra.xoa_restore_logs_info:
+  w0.xen_orchestra.xoa_restore_log_info:
     api_host: xo.example.com
     username: admin
     password: secret
@@ -110,14 +110,14 @@ EXAMPLES = r"""
     limit: 10
 
 - name: Get a single restore log by UUID
-  w0.xen_orchestra.xoa_restore_logs_info:
+  w0.xen_orchestra.xoa_restore_log_info:
     api_host: xo.example.com
     username: admin
     password: secret
-    restore_logs_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
+    restore_log_uuid: 613f541c-4bed-fc77-7ca8-2db6b68f079c
 
 - name: List restore logs with token authentication
-  w0.xen_orchestra.xoa_restore_logs_info:
+  w0.xen_orchestra.xoa_restore_log_info:
     api_host: xo.example.com
     token: "{{ xo_token }}"
     filter:

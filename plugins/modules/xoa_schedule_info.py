@@ -91,7 +91,7 @@ options:
     type: bool
 notes:
   - Authentication must be either C(token) alone or C(username) and C(password) together.
-  - This module maps to the Xen Orchestra C(/schedules), and C(/schedules/{id}) endpoints.
+  - This module maps to the Xen Orchestra C(/schedules) and C(/schedules/{id}) endpoints.
   - The module validates unsupported parameter combinations before making the API call.
 requirements:
   - python >= 3.9
