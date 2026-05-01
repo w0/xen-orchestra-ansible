@@ -207,7 +207,7 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
     provided_optional_params,
 )
 
-VIF_SUBRESOURCES = {
+NETWORK_SUBRESOURCES = {
     "alarms": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "messages": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
@@ -222,11 +222,11 @@ def _validate_request_shape(module):
     if subresource and not network_uuid:
         module.fail_json(msg="subresource requires network_uuid")
 
-    if subresource and subresource not in VIF_SUBRESOURCES:
+    if subresource and subresource not in NETWORK_SUBRESOURCES:
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
     provided = provided_optional_params(module)
-    allowed = allowed_request_parameters(VIF_SUBRESOURCES, network_uuid, subresource)
+    allowed = allowed_request_parameters(NETWORK_SUBRESOURCES, network_uuid, subresource)
 
     if not network_uuid:
         allowed = STANDARD_COLLECTION_PARAMS
@@ -235,7 +235,7 @@ def _validate_request_shape(module):
         allowed = set()
         label = "network detail request"
     else:
-        allowed = VIF_SUBRESOURCES[subresource]["supported_params"]
+        allowed = NETWORK_SUBRESOURCES[subresource]["supported_params"]
         label = f"network subresource '{subresource}'"
 
     fail_on_unsupported_params(module, provided, allowed, label)
@@ -245,7 +245,7 @@ def main():
     module = AnsibleModule(
         argument_spec=build_xoa_argument_spec(
             network_uuid=dict(type="str"),
-            subresource=dict(type="str", choices=list(VIF_SUBRESOURCES.keys())),
+            subresource=dict(type="str", choices=list(NETWORK_SUBRESOURCES.keys())),
             fields=dict(type="list", elements="str"),
             filter=dict(type="list", elements="str"),
             limit=dict(type="int"),

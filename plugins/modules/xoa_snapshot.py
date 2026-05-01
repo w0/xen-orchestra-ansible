@@ -222,7 +222,7 @@ def main():
             ("state", "absent", ["snapshot_uuid"]),
             ("state", "rollback", ["snapshot_uuid"]),
         ],
-        supports_check_mode=True,
+        supports_check_mode=False,
     )
 
     validate_auth(module)

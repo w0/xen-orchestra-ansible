@@ -191,7 +191,7 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
     provided_optional_params,
 )
 
-VDI_SUBRESOURCES = {
+GROUP_SUBRESOURCES = {
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "users": {"supported_params": STANDARD_COLLECTION_PARAMS},
 }
@@ -205,11 +205,11 @@ def _validate_request_shape(module):
     if subresource and not group_uuid:
         module.fail_json(msg="subresource requires group_uuid")
 
-    if subresource and subresource not in VDI_SUBRESOURCES:
+    if subresource and subresource not in GROUP_SUBRESOURCES:
         module.fail_json(msg=f"Invalid subresource: {subresource}")
 
     provided = provided_optional_params(module)
-    allowed = allowed_request_parameters(VDI_SUBRESOURCES, group_uuid, subresource)
+    allowed = allowed_request_parameters(GROUP_SUBRESOURCES, group_uuid, subresource)
 
     if not group_uuid:
         allowed = STANDARD_COLLECTION_PARAMS
@@ -218,7 +218,7 @@ def _validate_request_shape(module):
         allowed = set()
         label = "group detail request"
     else:
-        allowed = VDI_SUBRESOURCES[subresource]["supported_params"]
+        allowed = GROUP_SUBRESOURCES[subresource]["supported_params"]
         label = f"group subresource '{subresource}'"
 
     fail_on_unsupported_params(module, provided, allowed, label)
@@ -228,7 +228,7 @@ def main():
     module = AnsibleModule(
         argument_spec=build_xoa_argument_spec(
             group_uuid=dict(type="str"),
-            subresource=dict(type="str", choices=list(VDI_SUBRESOURCES.keys())),
+            subresource=dict(type="str", choices=list(GROUP_SUBRESOURCES.keys())),
             fields=dict(type="list", elements="str"),
             filter=dict(type="list", elements="str"),
             limit=dict(type="int"),

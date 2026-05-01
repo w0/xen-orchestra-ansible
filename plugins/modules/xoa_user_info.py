@@ -227,7 +227,7 @@ from ansible_collections.w0.xen_orchestra.plugins.module_utils.xoa_info import (
 )
 
 USER_SUBRESOURCES = {
-    "acl-privileges": {"supported_params": STANDARD_COLLECTION_PARAMS.remove("markdown")},
+    "acl-privileges": {"supported_params": {"id", "fields", "ndjson", "filter", "limit"}},
     "authentication_tokens": {"supported_params": {"id", "filter", "limit"}},
     "groups": {"supported_params": STANDARD_COLLECTION_PARAMS},
     "tasks": {"supported_params": STANDARD_COLLECTION_PARAMS},
